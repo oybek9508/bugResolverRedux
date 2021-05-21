@@ -1,25 +1,14 @@
-import logo from './logo.svg';
-import './App.css';
+import store from './functional/store'
+import * as actions from './functional/actions'
 
+store.dispatch(actions.bugAdded('Bug 1'))
+store.dispatch(actions.bugAdded('Bug 2'))
+store.dispatch(actions.bugAdded('Bug 3'))
+store.dispatch(actions.bugResolved(1))
+
+console.log(store.getState())
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  return <div className='App'></div>
 }
 
-export default App;
+export default App
