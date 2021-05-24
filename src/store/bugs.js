@@ -30,10 +30,9 @@ const slice = createSlice({
       const index = state.list.findIndex((bug) => bug.id === bugId)
       state.list[index].userId = userId
     },
-    bugResolved: (state, action) => {
-      state.list.map((bug) =>
-        bug.id === action.payload.id ? (bug.resolved = true) : bug
-      )
+    bugResolved: (bugs, action) => {
+      const index = bugs.list.findIndex((bug) => bug.id === action.payload.id)
+      bugs.list[index].resolved = true
     },
   },
 })
@@ -50,6 +49,13 @@ export default slice.reducer
 
 const url = '/bugs'
 
+export const resolveBug = (id) =>
+  apiCallBegan({
+    url: url + '/' + id,
+    method: 'patch',
+    data: { resolved: true },
+    onSuccess: bugResolved.type,
+  })
 // loadBugs is an action creator returning a function
 export const loadBugs = () => (dispatch, getState) => {
   const { bugs } = getState().entities
@@ -80,7 +86,7 @@ export const addBugs = (bug) =>
 
 export const getUnresolvedBugs = createSelector(
   (state) => state.entities.bugs,
-  (bugs) => bugs.filter((bug) => !bug.resolved)
+  (bugs) => bugs.list.filter((bug) => !bug.resolved)
 )
 
 export const getBugAssignedToUser = (userId) =>
