@@ -1,35 +1,82 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { create } from 'lodash'
+import moment from 'moment'
 import { createSelector } from 'reselect'
-
-let lastId = 0
+import { apiCallBegan } from './api'
 
 const slice = createSlice({
   name: 'bugs',
-  initialState: [],
+  initialState: {
+    list: [],
+    loading: false,
+    lastFetch: null,
+  },
   reducers: {
-    bugAdded: (state, action) => {
-      state.push({
-        id: ++lastId,
-        description: action.payload.description,
-        resolved: false,
-      })
+    bugsRequested: (state, action) => {
+      state.loading = true
     },
-    bugAssignedTouser: (state, action) => {
+    bugsRequestFailed: (state, action) => {
+      state.loading = false
+    },
+    bugsReceived: (state, action) => {
+      state.list = action.payload
+      state.lastFetch = Date.now()
+      state.loading = false
+    },
+    bugAdded: (state, action) => {
+      state.list.push(action.payload)
+    },
+    bugAssignedToUser: (state, action) => {
       const { bugId, userId } = action.payload
-      const index = state.findIndex((bug) => bug.id === bugId)
-      state[index].userId = userId
+      const index = state.list.findIndex((bug) => bug.id === bugId)
+      state.list[index].userId = userId
     },
     bugResolved: (state, action) => {
-      state.map((bug) =>
+      state.list.map((bug) =>
         bug.id === action.payload.id ? (bug.resolved = true) : bug
       )
     },
   },
 })
 
-export const { bugAdded, bugResolved, bugAssignedTouser } = slice.actions
+export const {
+  bugAdded,
+  bugResolved,
+  bugAssignedToUser,
+  bugsReceived,
+  bugsRequested,
+  bugsRequestFailed,
+} = slice.actions
 export default slice.reducer
+
+const url = '/bugs'
+
+// loadBugs is an action creator returning a function
+export const loadBugs = () => (dispatch, getState) => {
+  const { bugs } = getState().entities
+  console.log(bugs)
+  const { lastFetch } = getState().entities.bugs
+  // if the minutes are less than 10, then we are not gonna call the api for the second time
+  const diffInMinutes = moment().diff(moment(lastFetch), 'minutes')
+  if (diffInMinutes < 10) return
+
+  dispatch(
+    apiCallBegan({
+      url,
+      onError: bugsRequestFailed.type,
+      onStart: bugsRequested.type,
+      onSuccess: bugsReceived.type,
+    })
+  )
+}
+
+// making a post request
+export const addBugs = (bug) =>
+  apiCallBegan({
+    url,
+    method: 'post',
+    data: bug,
+    onSuccess: bugAdded.type,
+  })
 
 export const getUnresolvedBugs = createSelector(
   (state) => state.entities.bugs,
